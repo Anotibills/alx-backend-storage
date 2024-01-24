@@ -7,33 +7,40 @@ from pymongo import MongoClient
 
 
 def log_stats():
-    client = MongoClient("mongodb://localhost:27017/")
-    db = client["logs"]
-    collection = db["nginx"]
+    '''    
+    This includes IP address in log status
+    '''
+    client = MongoClient('mongodb://127.0.0.1:27017')
+    nginx_collection = client.logs.nginx
 
-    total_logs = collection.count_documents({})
-    print(f"{total_logs} logs")
+    n_logs = nginx_collection.count_documents({})
+    print(f'{n_logs} logs')
 
     methods = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+    print('Methods:')
     for method in methods:
-        method_count = collection.count_documents({"method": method})
-        print(f"\tmethod {method}: {method_count}")
+        count = nginx_collection.count_documents({"method": method})
+        print(f'\tmethod {method}: {count}')
 
-    status_check_count = collection.count_documents({"path": "/status"})
-    print(f"{status_check_count} status check")
+    status_check = nginx_collection.count_documents(
+        {"method": "GET", "path": "/status"}
+    )
+    print(f'{status_check} status check')
 
-    pipeline = [
+    top_ips_pipeline = [
         {"$group": {"_id": "$ip", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
-        {"$limit": 10}
+        {"$limit": 10},
+        {"$project": {"_id": 0, "ip": "$_id", "count": 1}}
     ]
-    top_ips = list(collection.aggregate(pipeline))
+
+    top_ips = nginx_collection.aggregate(top_ips_pipeline)
 
     print("IPs:")
-    for ip_info in top_ips:
-        ip = ip_info["_id"]
-        count = ip_info["count"]
-        print(f"\t{ip}: {count}")
+    for top_ip in top_ips:
+        ip = top_ip.get("ip")
+        count = top_ip.get("count")
+        print(f'\t{ip}: {count}')
 
 
 if __name__ == "__main__":
