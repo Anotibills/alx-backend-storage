@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-This uses the requests module to obtain the HTML content of a particular URL
+Script with requests module to obtain the HTML content of a particular URL
 and returns it
 """
 import requests
